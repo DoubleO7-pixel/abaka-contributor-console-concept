@@ -1,0 +1,232 @@
+<title>Contributor Console Concept</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: left rail nav + one workspace. Foundations tab documents the tokens; Queue and Review tabs use them. */
+:root{
+  --bg:#FAFAF9; --surface:#FFFFFF; --sunk:#F1F1EF; --line:#E1E1DE;
+  --fg:#161616; --muted:#6A6A66;
+  --accent:#2A44C9; --accent-fg:#FFFFFF; --accent-soft:#E7EBFC;
+  --ok:#2E7D32; --ok-soft:#E3F1E4; --warn:#9A6200; --warn-soft:#F8EBCB; --bad:#B3261E; --bad-soft:#F8DEDB;
+  --font-ui:"IBM Plex Sans",system-ui,sans-serif; --font-mono:"IBM Plex Mono",ui-monospace,monospace;
+  --s1:4px; --s2:8px; --s3:12px; --s4:16px; --s5:24px; --s6:32px; --r:6px;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0F0F10; --surface:#171718; --sunk:#0B0B0C; --line:#2B2B2E;
+  --fg:#EDEDEC; --muted:#9A9A97;
+  --accent:#93A6FF; --accent-fg:#0A1035; --accent-soft:#1E2548;
+  --ok:#72C676; --ok-soft:#173A1A; --warn:#E5B04C; --warn-soft:#3D2C07; --bad:#F0877F; --bad-soft:#4A1A17; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0F0F10; --surface:#171718; --sunk:#0B0B0C; --line:#2B2B2E;
+  --fg:#EDEDEC; --muted:#9A9A97;
+  --accent:#93A6FF; --accent-fg:#0A1035; --accent-soft:#1E2548;
+  --ok:#72C676; --ok-soft:#173A1A; --warn:#E5B04C; --warn-soft:#3D2C07; --bad:#F0877F; --bad-soft:#4A1A17; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font:14px/1.5 var(--font-ui);padding-block:0;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:1100px;margin:0 auto;padding-block:var(--s4) var(--s6)}
+header{display:flex;flex-wrap:wrap;gap:var(--s3);align-items:center;justify-content:space-between;padding-bottom:var(--s4);border-bottom:1px solid var(--line)}
+h1{font-size:18px;font-weight:600;margin:0}
+h2{font-size:15px;font-weight:600;margin:0 0 var(--s3)}
+.note{background:var(--sunk);color:var(--fg);border:1px solid var(--line);border-radius:var(--r);padding:var(--s3);margin-top:var(--s4);font-size:13px}
+.note b{color:var(--fg)}
+nav{display:flex;gap:var(--s1);flex-wrap:wrap}
+button,select,input{font:inherit;color:inherit}
+.tab,.btn{border:1px solid var(--line);background:var(--surface);border-radius:var(--r);padding:var(--s2) var(--s3);cursor:pointer}
+.tab[aria-selected=true]{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+.btn.primary{background:var(--accent);color:var(--accent-fg);border-color:var(--accent);font-weight:500}
+.btn.danger{color:var(--bad);border-color:var(--bad)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+main{padding-top:var(--s4)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:var(--s4)}
+.grid{display:grid;gap:var(--s4);grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr))}
+.mono{font-family:var(--font-mono);font-size:12px}
+.muted{color:var(--muted)}
+.badge{display:inline-block;padding:1px var(--s2);border-radius:99px;font-size:12px;font-weight:500;background:var(--sunk)}
+.badge.ok{background:var(--ok-soft);color:var(--ok)} .badge.warn{background:var(--warn-soft);color:var(--warn)} .badge.bad{background:var(--bad-soft);color:var(--bad)} .badge.acc{background:var(--accent-soft);color:var(--accent)}
+.sw{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:var(--s2)}
+.sw div{border:1px solid var(--line);border-radius:var(--r);overflow:hidden;font-size:12px}
+.sw i{display:block;height:40px}
+.sw span{display:block;padding:var(--s1) var(--s2)}
+.scroll{overflow-x:auto}
+table{border-collapse:collapse;width:100%;min-width:560px}
+th,td{text-align:left;padding:var(--s2) var(--s3);border-bottom:1px solid var(--line);vertical-align:middle}
+th{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:500}
+tr.row:hover{background:var(--sunk)}
+.filters{display:flex;flex-wrap:wrap;gap:var(--s2);margin-bottom:var(--s3);align-items:center}
+.chip{border:1px solid var(--line);background:var(--surface);border-radius:99px;padding:var(--s1) var(--s3);cursor:pointer;font-size:13px}
+.chip[aria-pressed=true]{background:var(--accent-soft);color:var(--accent);border-color:var(--accent)}
+.rev{display:grid;gap:var(--s4);grid-template-columns:minmax(0,1.5fr) minmax(0,1fr)}
+@media (max-width:760px){.rev{grid-template-columns:minmax(0,1fr)}}
+.stage{background:var(--sunk);border:1px solid var(--line);border-radius:var(--r);padding:var(--s2)}
+.stage svg{width:100%;height:auto;display:block}
+.ann{border:1px solid var(--line);border-radius:var(--r);padding:var(--s3);margin-bottom:var(--s2);background:var(--surface)}
+.ann.sel{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.seg button{border:0;border-right:1px solid var(--line);background:var(--surface);padding:var(--s1) var(--s3);cursor:pointer}
+.seg button:last-child{border-right:0}
+.seg button[aria-pressed=true].y{background:var(--ok-soft);color:var(--ok)}
+.seg button[aria-pressed=true].n{background:var(--bad-soft);color:var(--bad)}
+.bar{height:6px;background:var(--sunk);border-radius:99px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--accent);transition:width .2s}
+.row2{display:flex;flex-wrap:wrap;gap:var(--s2);align-items:center}
+.state-demo{display:flex;flex-wrap:wrap;gap:var(--s3);align-items:center}
+.inp{border:1px solid var(--line);background:var(--surface);border-radius:var(--r);padding:var(--s2) var(--s3);min-width:0;width:100%}
+.inp.err{border-color:var(--bad)}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom,0px));background:var(--fg);color:var(--bg);padding:var(--s2) var(--s4);border-radius:var(--r);font-size:13px;z-index:20}
+.phone{width:min(100%,300px);margin:0 auto;border:1px solid var(--line);border-radius:22px;padding:var(--s3);background:var(--surface)}
+kbd{font-family:var(--font-mono);font-size:11px;border:1px solid var(--line);border-bottom-width:2px;border-radius:4px;padding:0 5px;background:var(--surface)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+.intro{padding:var(--s2) 0 var(--s4)}.intro h2{font-size:20px;margin:0 0 var(--s1)}.intro p{margin:0;max-width:65ch;color:var(--muted)}.intro .who{margin-top:var(--s2);font-size:13px}
+.card h2{font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:600}
+</style>
+
+<div class="wrap">
+<header>
+  <div><h1>Contributor Console</h1><div class="muted">Design-system foundations and a task queue and review flow for remote expert contributors</div></div>
+  <div class="row2">
+    <nav role="tablist" aria-label="Sections">
+      <button class="tab" role="tab" id="t-foundations" aria-selected="true">Foundations</button>
+      <button class="tab" role="tab" id="t-queue" aria-selected="false">Task queue</button>
+      <button class="tab" role="tab" id="t-review" aria-selected="false">Review</button>
+      <button class="tab" role="tab" id="t-mobile" aria-selected="false">Mobile</button>
+    </nav>
+    <button class="btn" id="theme" aria-label="Toggle theme">Theme</button>
+  </div>
+</header>
+<div class="note"><b>Unofficial concept.</b> Built from the public job description for a Product Designer role at Abaka AI, which mentions a from-scratch design system, web and mobile products, and remote expert contributors. I have not seen their product. Every name, number and task below is invented sample data.</div>
+
+<main id="view"></main>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+const $=s=>document.querySelector(s), view=$('#view');
+const TASKS=[
+ {id:'T-2041',type:'Image boxes',title:'Warehouse shelves, 24 images',pay:'$0.42 / img',due:'6 h',lvl:'Standard',left:11},
+ {id:'T-2042',type:'Reasoning',title:'Rate step-by-step maths answers',pay:'$3.10 / item',due:'1 d',lvl:'Expert',left:4},
+ {id:'T-2043',type:'Video',title:'Mark tool-use segments, 90 s clips',pay:'$1.80 / clip',due:'2 d',lvl:'Standard',left:19},
+ {id:'T-2044',type:'Reasoning',title:'Spot errors in code explanations',pay:'$4.00 / item',due:'3 h',lvl:'Expert',left:2},
+ {id:'T-2045',type:'Image boxes',title:'Street scenes, occlusion labels',pay:'$0.55 / img',due:'1 d',lvl:'Standard',left:30},
+ {id:'T-2046',type:'Video',title:'Gesture start and end frames',pay:'$2.20 / clip',due:'4 d',lvl:'Entry',left:8}
+];
+let tab='foundations', filter='All', claimed=null;
+const ANN=[
+ {id:'a1',label:'pallet',x:30,y:150,w:150,h:90,v:null,note:'Box clips the left edge by about 6 px'},
+ {id:'a2',label:'carton',x:210,y:70,w:110,h:80,v:null,note:'Looks right'},
+ {id:'a3',label:'forklift',x:350,y:130,w:130,h:110,v:null,note:'Label should be "pallet jack"'}
+];
+let sel='a1', decision=null;
+function toast(m){const t=$('#toast');t.textContent=m;t.hidden=false;clearTimeout(toast.h);toast.h=setTimeout(()=>t.hidden=true,2200)}
+
+function foundations(){
+ const sw=[['--bg','Page'],['--surface','Surface'],['--sunk','Sunken'],['--line','Line'],['--accent','Accent'],['--accent-soft','Accent soft'],['--ok','Approved'],['--warn','Needs fix'],['--bad','Rejected']];
+ return `
+ <div class="grid">
+  <section class="card" style="grid-column:1/-1"><h2>Principle</h2>
+   <p style="margin:0;max-width:65ch">Contributors work in long, repetitive sessions, so the system favours legibility and fast keyboard paths over decoration. Colour carries task state only. Every state is also written as text, so nothing depends on colour alone.</p></section>
+  <section class="card"><h2>Colour tokens</h2><div class="sw">${sw.map(([v,n])=>`<div><i style="background:var(${v})"></i><span>${n}<br><span class="mono muted">${v}</span></span></div>`).join('')}</div></section>
+  <section class="card"><h2>Type scale</h2>
+   <div style="font-size:18px;font-weight:600">Heading 18 / 600</div>
+   <div style="font-size:15px;font-weight:600;margin-top:var(--s2)">Section 15 / 600</div>
+   <div style="margin-top:var(--s2)">Body 14 / 400. Task descriptions and guidelines.</div>
+   <div class="muted" style="font-size:13px;margin-top:var(--s2)">Secondary 13 / 400</div>
+   <div class="mono" style="margin-top:var(--s2)">Data 12 mono: T-2041 · $0.42 / img</div></section>
+  <section class="card"><h2>Spacing and radius</h2>
+   ${[4,8,12,16,24,32].map((n,i)=>`<div class="row2" style="margin-bottom:6px"><span class="mono" style="width:64px">--s${i+1}</span><div style="height:10px;width:${n*3}px;background:var(--accent);border-radius:2px"></div><span class="mono muted">${n}px</span></div>`).join('')}
+   <div class="mono muted">Radius 6px for controls and cards. Pills only for status.</div></section>
+  <section class="card"><h2>Buttons and status</h2>
+   <div class="state-demo"><button class="btn primary">Claim task</button><button class="btn">Skip</button><button class="btn danger">Reject</button><button class="btn" disabled>Disabled</button></div>
+   <div class="state-demo" style="margin-top:var(--s3)"><span class="badge ok">Approved</span><span class="badge warn">Needs fix</span><span class="badge bad">Rejected</span><span class="badge acc">In review</span><span class="badge">Queued</span></div></section>
+  <section class="card"><h2>Form field states</h2>
+   <label class="muted" for="f1">Default</label><input id="f1" class="inp" value="Pallet, wrapped">
+   <label class="muted" for="f2" style="display:block;margin-top:var(--s2)">Error</label><input id="f2" class="inp err" value="">
+   <div style="color:var(--bad);font-size:12px">Add a reason before rejecting.</div></section>
+  <section class="card"><h2>Patterns that repeat</h2>
+   <ul style="margin:0;padding-left:18px">
+    <li>Queue row: type, title, pay, deadline, level, one action.</li>
+    <li>Review pane: item on the left, verdicts on the right.</li>
+    <li>Keyboard first: <kbd>Y</kbd> correct, <kbd>N</kbd> wrong, <kbd>J</kbd>/<kbd>K</kbd> move.</li>
+    <li>Reject always asks for a reason.</li></ul></section>
+ </div>`;
+}
+function queue(){
+ const types=['All','Image boxes','Reasoning','Video'];
+ const rows=TASKS.filter(t=>filter==='All'||t.type===filter);
+ return `<div class="card">
+  <div class="filters" role="group" aria-label="Filter by task type">${types.map(t=>`<button class="chip" data-f="${t}" aria-pressed="${filter===t}">${t}</button>`).join('')}
+   <span class="muted" style="margin-left:auto">${rows.length} tasks · sample data</span></div>
+  <div class="scroll"><table><thead><tr><th>Task</th><th>Type</th><th>Pay</th><th>Due</th><th>Level</th><th>Left</th><th></th></tr></thead><tbody>
+  ${rows.map(t=>`<tr class="row"><td><b>${t.title}</b><div class="mono muted">${t.id}</div></td><td>${t.type}</td><td class="mono">${t.pay}</td>
+   <td><span class="badge ${parseInt(t.due)<=6&&t.due.includes('h')?'warn':''}">${t.due}</span></td><td>${t.lvl}</td><td class="mono">${t.left}</td>
+   <td>${claimed===t.id?'<span class="badge acc">Claimed</span>':`<button class="btn primary" data-c="${t.id}">Claim</button>`}</td></tr>`).join('')}
+  </tbody></table></div>
+  <p class="muted" style="margin:var(--s3) 0 0;font-size:13px">Pay and deadline sit in the row so a contributor can decide without opening the task. Expert-level tasks are visible but marked, so nobody claims work they will bounce off.</p></div>`;
+}
+function scene(){
+ return `<div class="stage"><svg viewBox="0 0 520 280" role="img" aria-label="Sample warehouse image with three contributor boxes">
+  <rect width="520" height="280" fill="var(--sunk)"/><rect y="240" width="520" height="40" fill="var(--line)"/>
+  <rect x="36" y="160" width="138" height="78" fill="var(--muted)" opacity=".5"/>
+  <rect x="216" y="78" width="98" height="68" fill="var(--muted)" opacity=".4"/>
+  <rect x="356" y="140" width="118" height="98" fill="var(--muted)" opacity=".6"/>
+  ${ANN.map(a=>{const c=a.v==='y'?'var(--ok)':a.v==='n'?'var(--bad)':'var(--accent)';return `<g data-a="${a.id}" style="cursor:pointer"><rect x="${a.x}" y="${a.y}" width="${a.w}" height="${a.h}" fill="none" stroke="${c}" stroke-width="${sel===a.id?3:1.5}" stroke-dasharray="${sel===a.id?'':'5 3'}"/><text x="${a.x+4}" y="${a.y-5}" font-size="12" font-family="IBM Plex Mono,monospace" fill="var(--fg)">${a.label}</text></g>`}).join('')}
+ </svg></div>`;
+}
+function review(){
+ if(!claimed) return `<div class="card"><h2>No task claimed</h2><p class="muted" style="margin:0 0 var(--s3)">Claim a task in the queue first. This view opens a sample submission for T-2041.</p><button class="btn primary" id="open">Open sample submission</button></div>`;
+ const done=ANN.filter(a=>a.v).length, bad=ANN.some(a=>a.v==='n');
+ return `<div class="card"><div class="row2" style="justify-content:space-between;margin-bottom:var(--s3)"><div><b>Submission 7 of 24</b> <span class="mono muted">T-2041 · contributor C-318 · sample data</span></div>
+  <span class="badge acc">In review</span></div>
+  <div class="bar" aria-label="Annotations checked"><i style="width:${done/ANN.length*100}%"></i></div>
+  <div class="mono muted" style="margin:var(--s1) 0 var(--s3)">${done} of ${ANN.length} annotations checked</div>
+  <div class="rev"><div>${scene()}</div>
+   <div>${ANN.map(a=>`<div class="ann ${sel===a.id?'sel':''}" data-a="${a.id}"><div class="row2" style="justify-content:space-between"><b>${a.label}</b>
+     <div class="seg" role="group" aria-label="Verdict for ${a.label}"><button class="y" data-v="y" data-id="${a.id}" aria-pressed="${a.v==='y'}">Correct</button><button class="n" data-v="n" data-id="${a.id}" aria-pressed="${a.v==='n'}">Wrong</button></div></div>
+     <div class="muted" style="font-size:13px;margin-top:var(--s1)">${a.note}</div></div>`).join('')}
+    <label class="muted" for="reason">Reason ${bad?'(required)':'(optional)'}</label>
+    <input id="reason" class="inp ${bad&&decision==='err'?'err':''}" placeholder="Visible to the contributor">
+    ${bad&&decision==='err'?'<div style="color:var(--bad);font-size:12px">Add a reason before sending this back.</div>':''}
+    <div class="row2" style="margin-top:var(--s3)"><button class="btn primary" id="approve" ${done<ANN.length||bad?'disabled':''}>Approve</button><button class="btn" id="fix" ${done<ANN.length?'disabled':''}>Send back to fix</button></div>
+    <div class="muted" style="font-size:12px;margin-top:var(--s2)"><kbd>Y</kbd> correct · <kbd>N</kbd> wrong · <kbd>J</kbd>/<kbd>K</kbd> next or previous box</div>
+   </div></div></div>`;
+}
+function mobile(){
+ return `<div class="grid"><div class="phone"><div class="row2" style="justify-content:space-between"><b>Tasks</b><span class="badge ok">Online</span></div>
+  ${TASKS.slice(0,3).map(t=>`<div class="ann" style="margin-top:var(--s2)"><b>${t.title}</b><div class="row2" style="justify-content:space-between;margin-top:var(--s1)"><span class="mono">${t.pay}</span><span class="badge">${t.due}</span></div><button class="btn primary" style="width:100%;margin-top:var(--s2);min-height:44px">Claim</button></div>`).join('')}</div>
+  <section class="card"><h2>What changes on a phone</h2><ul style="margin:0;padding-left:18px">
+   <li>Table rows become cards. Pay and deadline stay in the same two positions.</li>
+   <li>Touch targets are at least 44 px tall.</li>
+   <li>Review is one box at a time with Correct and Wrong pinned at the bottom, replacing the keyboard shortcuts.</li>
+   <li>Same tokens, same status words. Only layout changes.</li></ul></section></div>`;
+}
+function render(){
+ ['foundations','queue','review','mobile'].forEach(k=>$('#t-'+k).setAttribute('aria-selected',tab===k));
+ const INTRO={
+ foundations:['Design system','The shared colours, type, spacing and components every contributor screen is built from. Nothing on the other tabs uses a value that is not listed here.','Used by: designers and engineers building any new product screen.'],
+ queue:['Task queue','Where a contributor picks their next piece of work. Pay, deadline and level are in each row so they can decide without opening the task.','Used by: remote expert contributors.'],
+ review:['Review','A reviewer checks each box a contributor drew, marks it correct or wrong, then approves or sends the submission back with a reason.','Used by: reviewers and quality leads.'],
+ mobile:['Mobile','The same queue on a phone. Rows become cards and the layout changes; the colours, words and status labels stay the same.','Used by: contributors working away from a desk.']}[tab];
+view.innerHTML=`<div class="intro"><h2>${INTRO[0]}</h2><p>${INTRO[1]}</p><div class="who">${INTRO[2]}</div></div>`+{foundations,queue,review,mobile}[tab]();
+ history.replaceState(null,'','#'+tab);
+}
+document.addEventListener('click',e=>{
+ const t=e.target.closest('.tab'); if(t){tab=t.id.slice(2);return render()}
+ const f=e.target.closest('[data-f]'); if(f){filter=f.dataset.f;return render()}
+ const c=e.target.closest('[data-c]'); if(c){claimed=c.dataset.c;toast('Claimed '+claimed);tab='review';return render()}
+ if(e.target.id==='open'){claimed='T-2041';return render()}
+ const v=e.target.closest('[data-v]'); if(v){const a=ANN.find(x=>x.id===v.dataset.id);a.v=a.v===v.dataset.v?null:v.dataset.v;sel=a.id;decision=null;return render()}
+ const a=e.target.closest('[data-a]'); if(a){sel=a.dataset.a;return render()}
+ if(e.target.id==='approve'){toast('Approved. Next submission loaded.');ANN.forEach(x=>x.v=null);return render()}
+ if(e.target.id==='fix'){const r=$('#reason');if(ANN.some(x=>x.v==='n')&&!r.value.trim()){decision='err';render();return $('#reason').focus()}toast('Sent back with feedback.');ANN.forEach(x=>x.v=null);decision=null;return render()}
+ if(e.target.id==='theme'){const r=document.documentElement;const dark=r.dataset.theme?r.dataset.theme==='dark':matchMedia('(prefers-color-scheme:dark)').matches;r.dataset.theme=dark?'light':'dark'}
+});
+document.addEventListener('keydown',e=>{
+ if(tab!=='review'||!claimed||/INPUT|TEXTAREA/.test(e.target.tagName))return;
+ const i=ANN.findIndex(x=>x.id===sel),k=e.key.toLowerCase();
+ if(k==='j'){sel=ANN[Math.min(i+1,ANN.length-1)].id;render()}
+ else if(k==='k'){sel=ANN[Math.max(i-1,0)].id;render()}
+ else if(k==='y'||k==='n'){ANN[i].v=k;decision=null;render()}
+});
+const h=location.hash.slice(1); if(['foundations','queue','review','mobile'].includes(h))tab=h;
+render();
+</script>
